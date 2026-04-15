@@ -1,0 +1,118 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <dirent.h>
+
+#define NOTES_DIR "notes"
+#define MAX_TITLE 100
+#define MAX_CONTENT 1000
+
+void ensure_notes_dir() {
+    struct stat st = {0};
+    if (stat(NOTES_DIR, &st) == -1) {
+        mkdir(NOTES_DIR, 0700);
+    }
+}
+
+void create_note() {
+    char title[MAX_TITLE];
+    char content[MAX_CONTENT];
+    printf("Enter note title: ");
+    scanf(" %[^\n]", title);
+    printf("Enter note content: ");
+    scanf(" %[^\n]", content);
+
+    char filename[MAX_TITLE + 20];
+    snprintf(filename, sizeof(filename), "%s/%s.txt", NOTES_DIR, title);
+
+    FILE *fp = fopen(filename, "w");
+    if (fp == NULL) {
+        perror("Error creating note");
+        return;
+    }
+    fprintf(fp, "%s", content);
+    fclose(fp);
+    printf("Note '%s' created successfully.\n", title);
+}
+
+void view_note() {
+    char title[MAX_TITLE];
+    printf("Enter note title to view: ");
+    scanf(" %[^\n]", title);
+
+    char filename[MAX_TITLE + 20];
+    snprintf(filename, sizeof(filename), "%s/%s.txt", NOTES_DIR, title);
+
+    FILE *fp = fopen(filename, "r");
+    if (fp == NULL) {
+        printf("Note '%s' does not exist.\n", title);
+        return;
+    }
+
+    char ch;
+    while ((ch = fgetc(fp)) != EOF) {
+        putchar(ch);
+    }
+    fclose(fp);
+}
+
+void delete_note() {
+    char title[MAX_TITLE];
+    printf("Enter note title to delete: ");
+    scanf(" %[^\n]", title);
+
+    char filename[MAX_TITLE + 20];
+    snprintf(filename, sizeof(filename), "%s/%s.txt", NOTES_DIR, title);
+
+    if (remove(filename) == 0) {
+        printf("Note '%s' deleted successfully.\n", title);
+    } else {
+        printf("Note '%s' does not exist.\n", title);
+    }
+}
+
+void list_notes() {
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(NOTES_DIR);
+    if (d) {
+        printf("Saved notes:\n");
+        while ((dir = readdir(d)) != NULL) {
+            if (strstr(dir->d_name, ".txt")) {
+                char name[MAX_TITLE];
+                strncpy(name, dir->d_name, strlen(dir->d_name) - 4);
+                name[strlen(dir->d_name) - 4] = '\0';
+                printf("- %s\n", name);
+            }
+        }
+        closedir(d);
+    } else {
+        printf("No notes found.\n");
+    }
+}
+
+int main() {
+    ensure_notes_dir();
+    int choice;
+    while (1) {
+        printf("\n--- Notes Application ---\n");
+        printf("1. Create Note\n");
+        printf("2. View Note\n");
+        printf("3. Delete Note\n");
+        printf("4. List Notes\n");
+        printf("5. Exit\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+
+        switch (choice) {
+            case 1: create_note(); break;
+            case 2: view_note(); break;
+            case 3: delete_note(); break;
+            case 4: list_notes(); break;
+            case 5: printf("Exiting Notes Application.\n"); exit(0);
+            default: printf("Invalid choice. Try again.\n");
+        }
+    }
+    return 0;
+}
